@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">JetWeatherForecast</string>
+    <string name="app_version">Weather App v.0.1</string>
+    <string name="api_by">Weather API by: https://openweathermap.org</string>
 </resources>

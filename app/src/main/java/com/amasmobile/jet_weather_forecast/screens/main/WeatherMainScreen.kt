@@ -6,10 +6,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import coil.compose.rememberAsyncImagePainter
@@ -29,9 +32,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -41,21 +47,29 @@ import com.amasmobile.jet_weather_forecast.components.WeatherAppBar
 import com.amasmobile.jet_weather_forecast.data.DataOrException
 import com.amasmobile.jet_weather_forecast.models.Weather
 import com.amasmobile.jet_weather_forecast.models.WeatherItem
+import com.amasmobile.jet_weather_forecast.navigation.WeatherScreens
 import com.amasmobile.jet_weather_forecast.util.formatDate
 import com.amasmobile.jet_weather_forecast.util.formatDateTime
 
 
 @Composable
 fun WeatherMainScreen(navController: NavController,
-                      mainViewModel: MainViewModel = hiltViewModel()){
+                      mainViewModel: MainViewModel = hiltViewModel(),
+                      city: String?){
 
     val weatherData = produceState<DataOrException<Weather, Boolean, Exception>> (
         initialValue = DataOrException(loading = true)){
-        value = mainViewModel.getWeatherData("izmir")
+        value = mainViewModel.getWeatherData(city ?: "Seattle")
     }.value
 
     if (weatherData.loading == true){
-        CircularProgressIndicator()
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator()
+        }
+
     }
     else if (weatherData.data != null){
         MainScaffold(weatherData.data, navController)
@@ -70,7 +84,10 @@ fun MainScaffold(weather: Weather, navController: NavController){
             Column {
                 WeatherAppBar(
                     title = weather.city.name + ", ${weather.city.country}",
-                    navController = navController
+                    navController = navController,
+                    onSearchClicked = {
+                        navController.navigate(WeatherScreens.SearchScreen.name)
+                    }
                 )
                 HorizontalDivider()
             }
@@ -104,7 +121,7 @@ fun MainContent(padding: PaddingValues, weather: Weather){
         //Today's Weather
         TodayCircle(todayWeather)
 
-        //Today's Details
+        //Today's Humidity-Pressure-Wind Details
         HumidityPressureWind(todayWeather)
 
         HorizontalDivider(
@@ -113,6 +130,8 @@ fun MainContent(padding: PaddingValues, weather: Weather){
             thickness = 1.dp,
             color = Color.LightGray)
 
+
+        //Today's Sunrise-Sunset Details
         SunriseSunset(todayWeather)
 
         Text(
@@ -147,26 +166,37 @@ fun WeeklyWeather(weather: Weather){
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Medium))
                     WeatherImage(imageUrl)
-                    Card(
+                    Surface(
                         shape = RoundedCornerShape(20.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFFFAAE43))
+                        color = Color(0xFFFAAE43)
                     ) {
                         Text(
                             modifier = Modifier.padding(5.dp),
                             text = item.weather[0].description)
                     }
-                    Row {
-                        Text("${item.temp.day.toInt()}°",
-                            style = TextStyle(
-                                color = Color.Blue,
-                                fontSize = 22.sp,
-                                fontWeight = FontWeight.Bold))
-                        Text("${item.temp.night.toInt()}°",
-                            style = TextStyle(
-                                color = Color.LightGray,
-                                fontSize = 22.sp,
-                                fontWeight = FontWeight.Bold))
-                    }
+
+                    Text(
+                        buildAnnotatedString {
+                            withStyle(
+                                style = SpanStyle(
+                                    color = Color.Blue.copy(alpha = 0.7f),
+                                    fontSize = 22.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            ){
+                                append("${item.temp.max.toInt()}° ")
+                            }
+                            withStyle(
+                                style = SpanStyle(
+                                    color = Color.LightGray.copy(alpha = 0.7f),
+                                    fontSize = 22.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            ){
+                                append("${item.temp.min.toInt()}°")
+                            }
+                        }
+                    )
                 }
             }
         }

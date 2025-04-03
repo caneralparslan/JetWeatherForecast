@@ -5,7 +5,9 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -31,6 +33,7 @@ import kotlinx.coroutines.delay
 @Composable
 fun WeatherSplashScreen(navController: NavController){
 
+    val defaultCity = "Seattle"
     val scale = remember {
         androidx.compose.animation.core.Animatable(0f)
     }
@@ -44,29 +47,36 @@ fun WeatherSplashScreen(navController: NavController){
                         .getInterpolation(it)
                 }))
         delay(1000).apply {
-            navController.navigate(WeatherScreens.MainScreen.name)
+            navController.navigate(WeatherScreens.MainScreen.name + "/$defaultCity"){
+                popUpTo(0) { inclusive = true }
+            }
         }
     })
 
 
 
-    Surface(
-        modifier = Modifier.size(330.dp).scale(scale.value),
-        color = Color.White,
-        shape = CircleShape,
-        border = BorderStroke(width = 1.dp, color = Color.LightGray),
-    ) {
-
-        Column(
-            modifier = Modifier.padding(1.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
+    Box (
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ){
+        Surface(
+            modifier = Modifier.size(330.dp).scale(scale.value),
+            color = Color.White,
+            shape = CircleShape,
+            border = BorderStroke(width = 1.dp, color = Color.LightGray),
         ) {
-            Image(modifier = Modifier.size(95.dp), painter = painterResource(R.drawable.sun), contentDescription = "Sunny Icon")
-            Text("Find the Sun?",
-                style = TextStyle(color = Color.LightGray,
-                    fontSize = 20.sp)
-            )
+
+            Column(
+                modifier = Modifier.padding(1.dp),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Image(modifier = Modifier.size(95.dp), painter = painterResource(R.drawable.sun), contentDescription = "Sunny Icon")
+                Text("Find the Sun?",
+                    style = TextStyle(color = Color.LightGray,
+                        fontSize = 20.sp)
+                )
+            }
         }
     }
 }
