@@ -1,5 +1,6 @@
 package com.amasmobile.jet_weather_forecast.screens.main
 
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -27,7 +28,11 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -37,6 +42,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.toLowerCase
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -48,31 +54,50 @@ import com.amasmobile.jet_weather_forecast.data.DataOrException
 import com.amasmobile.jet_weather_forecast.models.Weather
 import com.amasmobile.jet_weather_forecast.models.WeatherItem
 import com.amasmobile.jet_weather_forecast.navigation.WeatherScreens
+import com.amasmobile.jet_weather_forecast.screens.settings.SettingsViewModel
 import com.amasmobile.jet_weather_forecast.util.formatDate
 import com.amasmobile.jet_weather_forecast.util.formatDateTime
+import java.util.Locale
 
 
 @Composable
 fun WeatherMainScreen(navController: NavController,
                       mainViewModel: MainViewModel = hiltViewModel(),
+                      settingsViewModel: SettingsViewModel = hiltViewModel(),
                       city: String?){
 
-    val weatherData = produceState<DataOrException<Weather, Boolean, Exception>> (
-        initialValue = DataOrException(loading = true)){
-        value = mainViewModel.getWeatherData(city ?: "Seattle")
-    }.value
 
-    if (weatherData.loading == true){
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            CircularProgressIndicator()
+    val unitFromDb = settingsViewModel.unitList.collectAsState().value
+
+/*    val units = if (unitFromDb.isNotEmpty()) {
+        unitFromDb[0].unit.split("°")[0].trim().lowercase()
+    } else {
+        "metric"
+    }*/
+
+
+
+    if(unitFromDb.isNotEmpty()){
+        val units = unitFromDb[0].unit.split("°")[0].trim().lowercase()
+        Log.d("unit", "WeatherMainScreen: $units")
+        val weatherData = produceState<DataOrException<Weather, Boolean, Exception>> (
+            initialValue = DataOrException(loading = true)){
+            value = mainViewModel.getWeatherData(city ?: "Seattle", units)
+        }.value
+
+
+        if (weatherData.loading == true){
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
+            }
+
         }
-
-    }
-    else if (weatherData.data != null){
-        MainScaffold(weatherData.data, navController)
+        else if (weatherData.data != null){
+            MainScaffold(weatherData.data, navController)
+        }
     }
 }
 
@@ -125,7 +150,8 @@ fun MainContent(padding: PaddingValues, weather: Weather){
         HumidityPressureWind(todayWeather)
 
         HorizontalDivider(
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
                 .padding(horizontal = 5.dp, vertical = 10.dp),
             thickness = 1.dp,
             color = Color.LightGray)
@@ -152,11 +178,16 @@ fun WeeklyWeather(weather: Weather){
             item ->
             val imageUrl = "https://openweathermap.org/img/wn/${item.weather[0].icon}.png"
             Card(
-                modifier = Modifier.padding(5.dp).fillMaxWidth().height(70.dp),
+                modifier = Modifier
+                    .padding(5.dp)
+                    .fillMaxWidth()
+                    .height(70.dp),
                 shape = RoundedCornerShape(24.dp),
             ) {
                 Row (
-                    modifier = Modifier.fillMaxWidth().padding(5.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(5.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ){
@@ -208,7 +239,9 @@ fun TodayCircle(todayWeather: WeatherItem){
     val imageUrl = "https://openweathermap.org/img/wn/${todayWeather.weather[0].icon}.png"
 
     Surface(
-        modifier = Modifier.padding(5.dp).size(200.dp),
+        modifier = Modifier
+            .padding(5.dp)
+            .size(200.dp),
         shape = CircleShape,
         color = Color(0xFFFAAE43)
     ) {
@@ -237,7 +270,10 @@ fun TodayCircle(todayWeather: WeatherItem){
 @Composable
 fun HumidityPressureWind(todayWeather: WeatherItem){
     Row (
-        modifier = Modifier.padding(10.dp).height(20.dp).fillMaxWidth(),
+        modifier = Modifier
+            .padding(10.dp)
+            .height(20.dp)
+            .fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ){
@@ -255,7 +291,7 @@ fun HumidityPressureWind(todayWeather: WeatherItem){
 
         Row( verticalAlignment = Alignment.CenterVertically) {
             Icon(painter = painterResource(R.drawable.wind), contentDescription = "Humidity Icon")
-            Text(" ${todayWeather.humidity} mph",
+            Text(" ${todayWeather.speed} mph",
                 style = TextStyle(fontSize = 14.sp))
         }
     }
@@ -264,7 +300,10 @@ fun HumidityPressureWind(todayWeather: WeatherItem){
 @Composable
 fun SunriseSunset(todayWeather: WeatherItem){
     Row (
-        modifier = Modifier.padding(10.dp).height(20.dp).fillMaxWidth(),
+        modifier = Modifier
+            .padding(10.dp)
+            .height(20.dp)
+            .fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ){
@@ -286,7 +325,9 @@ fun SunriseSunset(todayWeather: WeatherItem){
 @Composable
 fun WeatherImage(imageUrl: String){
     Image(
-        modifier = Modifier.size(90.dp).padding(bottom = 10.dp),
+        modifier = Modifier
+            .size(90.dp)
+            .padding(bottom = 10.dp),
         painter = rememberAsyncImagePainter(imageUrl),
         contentDescription = "Weather Image"
     )

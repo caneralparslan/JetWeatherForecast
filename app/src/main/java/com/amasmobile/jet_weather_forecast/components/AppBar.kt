@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Search
@@ -28,6 +29,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -40,8 +42,11 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.amasmobile.jet_weather_forecast.models.Favorite
 import com.amasmobile.jet_weather_forecast.navigation.WeatherScreens
+import com.amasmobile.jet_weather_forecast.screens.favorite.FavoriteViewModel
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -50,6 +55,7 @@ fun WeatherAppBar(
     title: String,
     isMainScreen: Boolean = true,
     navController: NavController,
+    favoriteViewModel: FavoriteViewModel = hiltViewModel(),
     onSearchClicked: () -> Unit = {},
 ){
 
@@ -112,11 +118,38 @@ fun WeatherAppBar(
             }
         },
         navigationIcon = {
+
+
             if(!isMainScreen){
                 Icon(imageVector = Icons.AutoMirrored.Default.ArrowBack, contentDescription = "",
                     modifier = Modifier.clickable {
                         navController.popBackStack()
                     })
+            }
+            else{
+                val dataList = title.split(",")
+                val favItem = Favorite(city = dataList[0], country = dataList[1].trim())
+
+                val favList by favoriteViewModel.favList.collectAsState()
+
+                val isFavorite = favList.any { it.city == favItem.city }
+                Log.d("isFavorite", "isFavorite: $isFavorite")
+
+                IconButton(
+                    onClick = {
+                        if (isFavorite) {
+                            favoriteViewModel.removeFavorite(favItem)
+                        } else {
+                            favoriteViewModel.addFavorite(favItem)
+                        }
+                    }
+                ) {
+                    Icon(
+                        imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                        contentDescription = "Fav Button",
+                        tint = Color.Red
+                    )
+                }
             }
         }
     )
